@@ -1,0 +1,913 @@
+<!DOCTYPE html>
+<html lang="en" class="dark h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>nztimer speedcubing timer</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        mono: ['JetBrains Mono', 'ui-monospace', 'SFMono-Regular', 'Menlo', 'Monaco', 'Consolas', 'monospace'],
+                        sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            400: '#38bdf8',
+                            500: '#0ea5e9',
+                            600: '#0284c7',
+                            900: '#0c4a6e',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: manipulation;
+        }
+        .font-timer {
+            font-family: 'JetBrains Mono', monospace;
+            font-variant-numeric: tabular-nums;
+        }
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.6);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(51, 65, 85, 0.8);
+            border-radius: 9999px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(71, 85, 105, 1);
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col justify-between overflow-x-hidden selection:bg-brand-500 selection:text-white">
+
+    <!-- Top Header / Bar -->
+    <header class="w-full bg-slate-900/80 backdrop-blur border-b border-slate-800/80 px-4 py-3 transition-all z-20">
+        <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-4">
+            
+            <!-- Logo & Event Select -->
+            <div class="flex items-center space-x-3">
+                <div class="flex items-center space-x-2">
+                    <div class="w-8 h-8 rounded-lg bg-gradient-to-tr from-brand-600 to-cyan-400 flex items-center justify-center shadow-lg shadow-brand-500/20">
+                        <i class="fa-solid fa-cube text-slate-950 font-bold text-lg"></i>
+                    </div>
+                    <span class="font-bold text-lg tracking-tight bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent">
+                        Nz<span class="text-brand-400">Timer</span>
+                    </span>
+                </div>
+
+                <div class="h-5 w-px bg-slate-800 hidden sm:block"></div>
+
+                <div class="flex items-center space-x-2 text-sm text-slate-400">
+                    <span class="hidden md:inline">Event:</span>
+                    <select id="eventSelect" class="bg-slate-800 border border-slate-700 text-slate-200 text-xs sm:text-sm rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-brand-500 transition cursor-pointer">
+                        <option value="333">3x3x3 Cube</option>
+                        <option value="222">2x2x2 Cube</option>
+                        <option value="444">4x4x4 Cube</option>
+                        <option value="pyram">Pyraminx</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Mode Toggles & Controls -->
+            <div class="flex items-center space-x-2 sm:space-x-3 text-xs sm:text-sm">
+                
+                <!-- Inspection Toggle -->
+                <label class="hidden md:flex items-center space-x-2 cursor-pointer bg-slate-800/60 hover:bg-slate-800 border border-slate-700/60 px-3 py-1.5 rounded-lg transition">
+                    <input type="checkbox" id="inspectionToggle" class="sr-only peer">
+                    <div class="w-7 h-4 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-brand-500 relative"></div>
+                    <span class="text-slate-300 select-none">15s Inspection</span>
+                </label>
+
+                <!-- BLD Toggle -->
+                <label class="hidden md:flex items-center space-x-2 cursor-pointer bg-slate-800/60 hover:bg-slate-800 border border-slate-700/60 px-3 py-1.5 rounded-lg transition">
+                    <input type="checkbox" id="bldToggle" class="sr-only peer">
+                    <div class="w-7 h-4 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-brand-500 relative"></div>
+                    <span class="text-slate-300 select-none">BLD Mode</span>
+                </label>
+
+                <!-- Leaderboard Button -->
+                <button id="openLeaderboardBtn" class="px-3 py-1.5 bg-brand-500/10 hover:bg-brand-500/20 text-brand-400 border border-brand-500/30 rounded-lg text-xs font-semibold transition flex items-center space-x-1.5">
+                    <i class="fa-solid fa-trophy text-amber-400"></i>
+                    <span>Leaderboard</span>
+                </button>
+
+                <!-- Auth Section (Google Login) -->
+                <div id="authSection">
+                    <button id="loginBtn" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 rounded-lg text-xs font-medium transition flex items-center space-x-1.5">
+                        <i class="fa-brands fa-google text-brand-400"></i>
+                        <span>Login</span>
+                    </button>
+                </div>
+
+                <!-- Clear Session -->
+                <button id="clearSessionBtn" class="p-1.5 sm:px-3 sm:py-1.5 bg-slate-800 hover:bg-rose-950/50 hover:text-rose-400 hover:border-rose-800/50 border border-slate-700 rounded-lg text-slate-400 transition flex items-center space-x-1.5" title="Clear current session">
+                    <i class="fa-solid fa-trash-can text-xs"></i>
+                    <span class="hidden sm:inline text-xs">Clear</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Workspace -->
+    <main id="touchArea" class="flex-1 max-w-7xl w-full mx-auto grid grid-cols-1 lg:grid-cols-4 gap-6 p-4 md:p-6 items-start relative focus:outline-none" tabindex="0">
+        
+        <!-- Left Panel: Stats Dashboard -->
+        <div class="order-2 lg:order-1 lg:col-span-1 space-y-4">
+            
+            <!-- Quick Stats Cards -->
+            <div class="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-4 backdrop-blur shadow-xl">
+                <h3 class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-3 flex items-center justify-between">
+                    <span>Statistics</span>
+                    <i class="fa-solid fa-chart-simple text-brand-400"></i>
+                </h3>
+                
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="bg-slate-950/50 border border-slate-800 p-2.5 rounded-xl">
+                        <div class="text-[10px] text-slate-400 uppercase tracking-wider">Solves</div>
+                        <div id="statSolves" class="text-lg font-bold text-slate-200 font-timer">0</div>
+                    </div>
+                    <div class="bg-slate-950/50 border border-slate-800 p-2.5 rounded-xl">
+                        <div class="text-[10px] text-slate-400 uppercase tracking-wider">Best Single</div>
+                        <div id="statBest" class="text-lg font-bold text-emerald-400 font-timer">--</div>
+                    </div>
+                    <div class="bg-slate-950/50 border border-slate-800 p-2.5 rounded-xl">
+                        <div class="text-[10px] text-slate-400 uppercase tracking-wider">Current Mo3</div>
+                        <div id="statMo3" class="text-lg font-bold text-slate-200 font-timer">--</div>
+                    </div>
+                    <div class="bg-slate-950/50 border border-slate-800 p-2.5 rounded-xl">
+                        <div class="text-[10px] text-slate-400 uppercase tracking-wider">Best Ao5</div>
+                        <div id="statBestAo5" class="text-lg font-bold text-brand-400 font-timer">--</div>
+                    </div>
+                    <div class="bg-slate-950/50 border border-slate-800 p-2.5 rounded-xl">
+                        <div class="text-[10px] text-slate-400 uppercase tracking-wider">Current Ao5</div>
+                        <div id="statAo5" class="text-lg font-bold text-slate-200 font-timer">--</div>
+                    </div>
+                    <div class="bg-slate-950/50 border border-slate-800 p-2.5 rounded-xl">
+                        <div class="text-[10px] text-slate-400 uppercase tracking-wider">Current Ao12</div>
+                        <div id="statAo12" class="text-lg font-bold text-slate-200 font-timer">--</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Session History List -->
+            <div class="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-4 backdrop-blur shadow-xl flex flex-col h-[320px]">
+                <div class="flex items-center justify-between mb-3">
+                    <h3 class="text-xs font-semibold uppercase tracking-wider text-slate-400 flex items-center space-x-2">
+                        <span>History</span>
+                        <span id="historyCountBadge" class="bg-slate-800 text-slate-300 text-[10px] px-2 py-0.5 rounded-full font-mono">0</span>
+                    </h3>
+                    <span class="text-[11px] text-slate-400">Click solve to edit</span>
+                </div>
+                
+                <div id="historyList" class="flex-1 overflow-y-auto space-y-1.5 pr-1">
+                    <div class="text-center text-slate-400 text-sm py-8 italic">No solves recorded yet.</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Center Panel: Scramble & Main Timer -->
+        <div class="order-1 lg:order-2 lg:col-span-3 flex flex-col items-center justify-center min-h-[480px] lg:min-h-[560px] space-y-8 relative">
+            
+            <!-- Scramble Display Box -->
+            <div class="w-full bg-slate-900/80 border border-slate-800 rounded-2xl p-4 md:p-6 text-center shadow-xl backdrop-blur relative group">
+                <div class="text-slate-400 text-xs font-semibold tracking-widest uppercase mb-2">Scramble</div>
+                <div id="scrambleDisplay" class="font-mono text-lg sm:text-xl md:text-2xl font-bold tracking-wide text-slate-100 leading-relaxed min-h-[3.5rem] flex items-center justify-center px-4">
+                    Generating scramble...
+                </div>
+                
+                <div class="flex justify-center items-center space-x-3 mt-4 pt-3 border-t border-slate-800/60">
+                    <button id="nextScrambleBtn" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-lg text-xs font-medium transition flex items-center space-x-1.5">
+                        <i class="fa-solid fa-rotate-right text-brand-400"></i>
+                        <span>New Scramble</span>
+                    </button>
+                    <button id="copyScrambleBtn" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-lg text-xs font-medium transition flex items-center space-x-1.5">
+                        <i class="fa-solid fa-copy text-slate-400"></i>
+                        <span>Copy</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Central Timer Area -->
+            <div class="flex-1 flex flex-col items-center justify-center w-full my-auto py-6">
+                
+                <div id="timerStatus" class="h-8 mb-2 flex items-center justify-center">
+                    <span class="text-xs font-semibold tracking-wider uppercase px-3 py-1 rounded-full bg-slate-900 border border-slate-800 text-slate-400 transition-all duration-200">
+                        Press Space / Touch & Hold to Ready
+                    </span>
+                </div>
+
+                <div id="bldPhaseDisplay" class="hidden text-sm font-semibold tracking-widest text-amber-400 uppercase mb-2">
+                    Phase: MEMO
+                </div>
+
+                <div id="timerDisplay" class="font-timer text-7xl sm:text-8xl md:text-9xl font-extrabold tracking-tight text-slate-100 transition-colors duration-150 select-none drop-shadow-[0_10px_20px_rgba(0,0,0,0.5)]">
+                    0.000
+                </div>
+
+                <div id="lastSolveControls" class="opacity-0 pointer-events-none transition-all duration-300 mt-6 flex items-center space-x-3 bg-slate-900/90 border border-slate-800 rounded-full px-4 py-2 backdrop-blur shadow-xl">
+                    <span class="text-xs text-slate-400 font-medium mr-1">Last solve:</span>
+                    <button id="btnPenaltyPlus2" class="px-3 py-1 rounded-full text-xs font-semibold border border-amber-500/40 text-amber-400 hover:bg-amber-500/20 transition">
+                        +2
+                    </button>
+                    <button id="btnPenaltyDNF" class="px-3 py-1 rounded-full text-xs font-semibold border border-rose-500/40 text-rose-400 hover:bg-rose-500/20 transition">
+                        DNF
+                    </button>
+                    <div class="h-4 w-px bg-slate-800"></div>
+                    <button id="btnDeleteLast" class="px-2.5 py-1 rounded-full text-xs font-semibold text-slate-400 hover:text-rose-400 hover:bg-slate-800 transition" title="Delete last solve">
+                        <i class="fa-solid fa-trash"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div class="text-center text-xs text-slate-400 space-y-1">
+                <p class="hidden sm:block"><kbd class="px-1.5 py-0.5 bg-slate-800 border border-slate-700 rounded text-slate-300 font-mono text-[11px]">Spacebar</kbd> Hold to prepare, release to start timing, press any key to stop.</p>
+                <p class="sm:hidden">Touch and hold screen to prepare, release to start.</p>
+            </div>
+        </div>
+    </main>
+
+    <!-- Leaderboard Modal -->
+    <div id="leaderboardModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-xl w-full p-6 shadow-2xl relative">
+            <button id="closeLeaderboardBtn" class="absolute top-4 right-4 text-slate-400 hover:text-white p-2">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+            
+            <h2 class="text-lg font-bold text-slate-100 flex items-center space-x-2 mb-4">
+                <i class="fa-solid fa-trophy text-amber-400"></i>
+                <span>Global Leaderboard</span>
+            </h2>
+
+            <div id="leaderboardContent" class="space-y-2 max-h-[360px] overflow-y-auto pr-1">
+                <div class="text-center py-8 text-slate-500 text-sm">Loading leaderboard...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed bottom-5 right-5 transform translate-y-20 opacity-0 bg-slate-800 text-slate-100 border border-slate-700 px-4 py-2.5 rounded-xl shadow-2xl transition-all duration-300 flex items-center space-x-2 z-50 pointer-events-none">
+        <i class="fa-solid fa-circle-check text-brand-400"></i>
+        <span id="toastMessage" class="text-xs font-medium">Notification</span>
+    </div>
+
+    <!-- Firebase SDK & Web App Logic -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-app.js";
+        import { getAnalytics } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-analytics.js";
+        import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js";
+        import { getFirestore, doc, setDoc, collection, query, where, orderBy, limit, getDocs } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js";
+
+        // Konfigurasi Firebase Milikmu
+        const firebaseConfig = {
+            apiKey: "AIzaSyCSxEqwGCujy8NO396WeRjs2oEnLNxsgvw",
+            authDomain: "nztimer.firebaseapp.com",
+            projectId: "nztimer",
+            storageBucket: "nztimer.firebasestorage.app",
+            messagingSenderId: "1046501047885",
+            appId: "1:1046501047885:web:a40a28ddaa3917922da604",
+            measurementId: "G-6333WG6WYT"
+        };
+
+        // Inisialisasi Firebase & Analytics
+        const app = initializeApp(firebaseConfig);
+        const analytics = getAnalytics(app);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const provider = new GoogleAuthProvider();
+
+        let currentUser = null;
+
+        // Timer Application State
+        const state = {
+            event: '333',
+            solves: [],
+            timerState: 'IDLE',
+            startTime: 0,
+            elapsedTime: 0,
+            timerInterval: null,
+            holdTimeout: null,
+            readyThresholdMs: 300,
+            inspectionEnabled: false,
+            inspectionTimeLeft: 15,
+            inspectionInterval: null,
+            bldMode: false,
+            bldMemoTime: 0,
+            bldPhase: 'NONE',
+            currentScramble: ''
+        };
+
+        // DOM Elements
+        const timerDisplay = document.getElementById('timerDisplay');
+        const timerStatus = document.getElementById('timerStatus');
+        const scrambleDisplay = document.getElementById('scrambleDisplay');
+        const historyList = document.getElementById('historyList');
+        const touchArea = document.getElementById('touchArea');
+        const eventSelect = document.getElementById('eventSelect');
+        const inspectionToggle = document.getElementById('inspectionToggle');
+        const bldToggle = document.getElementById('bldToggle');
+        const bldPhaseDisplay = document.getElementById('bldPhaseDisplay');
+        const lastSolveControls = document.getElementById('lastSolveControls');
+        const btnPenaltyPlus2 = document.getElementById('btnPenaltyPlus2');
+        const btnPenaltyDNF = document.getElementById('btnPenaltyDNF');
+        const btnDeleteLast = document.getElementById('btnDeleteLast');
+
+        const statSolves = document.getElementById('statSolves');
+        const statBest = document.getElementById('statBest');
+        const statMo3 = document.getElementById('statMo3');
+        const statAo5 = document.getElementById('statAo5');
+        const statBestAo5 = document.getElementById('statBestAo5');
+        const statAo12 = document.getElementById('statAo12');
+        const historyCountBadge = document.getElementById('historyCountBadge');
+        
+        const authSection = document.getElementById('authSection');
+        const leaderboardModal = document.getElementById('leaderboardModal');
+
+        // --- Firebase Auth & Sync ---
+        async function loginWithGoogle() {
+            try {
+                await signInWithPopup(auth, provider);
+                showToast("Berhasil login!");
+            } catch (err) {
+                console.error(err);
+                showToast("Gagal login dengan Google!");
+            }
+        }
+
+        async function logoutUser() {
+            await signOut(auth);
+            showToast("Logged out");
+        }
+
+        onAuthStateChanged(auth, (user) => {
+            currentUser = user;
+            if (user) {
+                authSection.innerHTML = `
+                    <div class="flex items-center space-x-2">
+                        <img src="${user.photoURL || 'https://via.placeholder.com/32'}" class="w-7 h-7 rounded-full border border-brand-400">
+                        <button id="logoutBtn" class="text-xs text-slate-400 hover:text-rose-400 transition">Logout</button>
+                    </div>
+                `;
+                document.getElementById('logoutBtn').addEventListener('click', logoutUser);
+                syncUserPB();
+            } else {
+                authSection.innerHTML = `
+                    <button id="loginBtn" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 rounded-lg text-xs font-medium transition flex items-center space-x-1.5">
+                        <i class="fa-brands fa-google text-brand-400"></i>
+                        <span>Login</span>
+                    </button>
+                `;
+                document.getElementById('loginBtn').addEventListener('click', loginWithGoogle);
+            }
+        });
+
+        async function syncUserPB() {
+            if (!currentUser) return;
+            const currentSolves = state.solves.filter(s => s.event === state.event);
+            const validSolves = currentSolves.filter(s => s.penalty !== 'DNF');
+
+            if (validSolves.length === 0) return;
+
+            const bestSingle = Math.min(...validSolves.map(s => getEffectiveTime(s)));
+            
+            try {
+                const userRef = doc(db, "leaderboards", `${state.event}_${currentUser.uid}`);
+                await setDoc(userRef, {
+                    uid: currentUser.uid,
+                    displayName: currentUser.displayName,
+                    photoURL: currentUser.photoURL,
+                    event: state.event,
+                    bestSingle: bestSingle,
+                    updatedAt: new Date().toISOString()
+                }, { merge: true });
+            } catch (e) {
+                console.error("Cloud Sync Error:", e);
+            }
+        }
+
+        async function loadLeaderboard() {
+            const leaderboardContent = document.getElementById('leaderboardContent');
+            leaderboardContent.innerHTML = `<div class="text-center py-6 text-slate-400 text-xs">Memuat data leaderboard...</div>`;
+
+            try {
+                const q = query(
+                    collection(db, "leaderboards"),
+                    where("event", "==", state.event),
+                    orderBy("bestSingle", "asc"),
+                    limit(20)
+                );
+                
+                const querySnapshot = await getDocs(q);
+                let html = '';
+                let rank = 1;
+
+                querySnapshot.forEach((docSnap) => {
+                    const data = docSnap.data();
+                    html += `
+                        <div class="flex items-center justify-between p-2.5 bg-slate-950/60 border border-slate-800 rounded-xl text-xs">
+                            <div class="flex items-center space-x-3">
+                                <span class="font-mono font-bold text-slate-400 w-4">${rank++}.</span>
+                                <img src="${data.photoURL || 'https://via.placeholder.com/32'}" class="w-6 h-6 rounded-full">
+                                <span class="font-semibold text-slate-200">${data.displayName}</span>
+                            </div>
+                            <span class="font-timer font-bold text-emerald-400">${formatTime(data.bestSingle)}</span>
+                        </div>
+                    `;
+                });
+
+                leaderboardContent.innerHTML = html || `<div class="text-center py-6 text-slate-400 text-xs">Belum ada rekor untuk kategori ini.</div>`;
+            } catch (e) {
+                console.error(e);
+                leaderboardContent.innerHTML = `<div class="text-center py-6 text-rose-400 text-xs">Gagal memuat leaderboard. Pastikan Firestore aturan mengizinkan read.</div>`;
+            }
+        }
+
+        document.getElementById('openLeaderboardBtn').addEventListener('click', () => {
+            leaderboardModal.classList.remove('hidden');
+            loadLeaderboard();
+        });
+
+        document.getElementById('closeLeaderboardBtn').addEventListener('click', () => {
+            leaderboardModal.classList.add('hidden');
+        });
+
+        // --- Scramble Generator Logic ---
+        const MOVES = {
+            '333': ['U', 'D', 'L', 'R', 'F', 'B'],
+            '222': ['U', 'R', 'F'],
+            '444': ['U', 'D', 'L', 'R', 'F', 'B', 'Uw', 'Rw', 'Fw'],
+            'pyram': ['U', 'L', 'R', 'B']
+        };
+
+        const MODIFIERS = ['', "'", '2'];
+
+        function generateScramble(event = '333') {
+            const moveList = MOVES[event] || MOVES['333'];
+            const length = event === '222' ? 11 : event === 'pyram' ? 12 : event === '444' ? 40 : 22;
+            const scramble = [];
+            let lastMove = '', secondLastMove = '';
+
+            for (let i = 0; i < length; i++) {
+                let availableMoves = moveList.filter(m => {
+                    if (m === lastMove) return false;
+                    if (isOppositeFace(m, lastMove) && m === secondLastMove) return false;
+                    return true;
+                });
+
+                const chosenMove = availableMoves[Math.floor(Math.random() * availableMoves.length)];
+                const chosenMod = MODIFIERS[Math.floor(Math.random() * MODIFIERS.length)];
+                
+                scramble.push(chosenMove + chosenMod);
+                secondLastMove = lastMove;
+                lastMove = chosenMove;
+            }
+
+            if (event === 'pyram') {
+                const tips = ['u', 'l', 'r', 'b'];
+                tips.forEach(tip => {
+                    if (Math.random() > 0.4) {
+                        const mod = MODIFIERS[Math.floor(Math.random() * 2)];
+                        scramble.push(tip + mod);
+                    }
+                });
+            }
+
+            state.currentScramble = scramble.join(' ');
+            scrambleDisplay.textContent = state.currentScramble;
+        }
+
+        function isOppositeFace(m1, m2) {
+            const pairs = [['U', 'D'], ['L', 'R'], ['F', 'B']];
+            return pairs.some(pair => (pair.includes(m1) && pair.includes(m2)));
+        }
+
+        // --- Helpers ---
+        function formatTime(ms, penalty = 0) {
+            if (penalty === 'DNF') return 'DNF';
+            let totalMs = ms + (penalty === 2 ? 2000 : 0);
+            
+            const minutes = Math.floor(totalMs / 60000);
+            const seconds = Math.floor((totalMs % 60000) / 1000);
+            const milliseconds = Math.floor(totalMs % 1000);
+
+            const secStr = seconds.toString().padStart(minutes > 0 ? 2 : 1, '0');
+            const msStr = milliseconds.toString().padStart(3, '0');
+
+            return minutes > 0 ? `${minutes}:${secStr}.${msStr}` : `${secStr}.${msStr}`;
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toastMessage').textContent = msg;
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            setTimeout(() => toast.classList.add('translate-y-20', 'opacity-0'), 2000);
+        }
+
+        // --- Core Timer Logic ---
+        function startTimer() {
+            state.timerState = 'RUNNING';
+            state.startTime = performance.now();
+            updateStatusBadge('Timing...', 'bg-brand-500/20 text-brand-400 border-brand-500/30');
+            timerDisplay.className = 'font-timer text-7xl sm:text-8xl md:text-9xl font-extrabold tracking-tight text-brand-400 select-none';
+            state.timerInterval = requestAnimationFrame(updateTimerLoop);
+        }
+
+        function updateTimerLoop() {
+            if (state.timerState !== 'RUNNING') return;
+            state.elapsedTime = performance.now() - state.startTime;
+            timerDisplay.textContent = formatTime(state.elapsedTime);
+            state.timerInterval = requestAnimationFrame(updateTimerLoop);
+        }
+
+        function stopTimer() {
+            cancelAnimationFrame(state.timerInterval);
+            state.timerState = 'IDLE';
+
+            const solve = {
+                id: Date.now(),
+                rawTime: state.elapsedTime,
+                penalty: 0,
+                scramble: state.currentScramble,
+                timestamp: new Date().toISOString(),
+                event: state.event
+            };
+
+            if (state.bldMode) {
+                solve.memoTime = state.bldMemoTime;
+                bldPhaseDisplay.classList.add('hidden');
+            }
+
+            state.solves.unshift(solve);
+            saveSolvesToStorage();
+            
+            timerDisplay.textContent = formatTime(solve.rawTime);
+            timerDisplay.className = 'font-timer text-7xl sm:text-8xl md:text-9xl font-extrabold tracking-tight text-slate-100 select-none';
+
+            updateStatusBadge('Press Space / Touch & Hold to Ready', 'bg-slate-900 border-slate-800 text-slate-400');
+            updateStats();
+            renderHistory();
+            generateScramble(state.event);
+            showLastSolveControls();
+            syncUserPB();
+        }
+
+        // --- Inspection Mode ---
+        function startInspection() {
+            state.timerState = 'INSPECTION';
+            state.inspectionTimeLeft = 15;
+            updateStatusBadge('Inspection Running', 'bg-amber-500/20 text-amber-400 border-amber-500/30');
+            timerDisplay.textContent = state.inspectionTimeLeft;
+            timerDisplay.className = 'font-timer text-7xl sm:text-8xl md:text-9xl font-extrabold tracking-tight text-amber-400 select-none';
+
+            state.inspectionInterval = setInterval(() => {
+                state.inspectionTimeLeft--;
+                if (state.inspectionTimeLeft > 0) {
+                    timerDisplay.textContent = state.inspectionTimeLeft;
+                } else if (state.inspectionTimeLeft === 0) {
+                    timerDisplay.textContent = '+2';
+                } else if (state.inspectionTimeLeft <= -2) {
+                    timerDisplay.textContent = 'DNF';
+                    clearInterval(state.inspectionInterval);
+                }
+            }, 1000);
+        }
+
+        function stopInspection() {
+            clearInterval(state.inspectionInterval);
+        }
+
+        // --- Key & Touch Events ---
+        function handleKeyDown(e) {
+            if (e.repeat || e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+
+            if (e.code === 'Space') {
+                e.preventDefault();
+
+                if (state.timerState === 'RUNNING') {
+                    stopTimer();
+                    return;
+                }
+
+                if (state.timerState === 'BLD_MEMO') {
+                    state.bldMemoTime = performance.now() - state.startTime;
+                    state.bldPhase = 'EXEC';
+                    bldPhaseDisplay.textContent = 'Phase: EXECUTION';
+                    bldPhaseDisplay.classList.remove('hidden');
+                    state.startTime = performance.now();
+                    return;
+                }
+
+                if (state.timerState === 'IDLE' || state.timerState === 'INSPECTION') {
+                    if (state.inspectionEnabled && state.timerState === 'IDLE') {
+                        startInspection();
+                        return;
+                    }
+                    if (state.inspectionEnabled && state.timerState === 'INSPECTION') {
+                        stopInspection();
+                    }
+
+                    state.timerState = 'HOLDING';
+                    timerDisplay.className = 'font-timer text-7xl sm:text-8xl md:text-9xl font-extrabold tracking-tight text-rose-500 select-none';
+                    updateStatusBadge('Hold spacebar...', 'bg-rose-500/20 text-rose-400 border-rose-500/30');
+
+                    state.holdTimeout = setTimeout(() => {
+                        state.timerState = 'READY';
+                        timerDisplay.className = 'font-timer text-7xl sm:text-8xl md:text-9xl font-extrabold tracking-tight text-emerald-400 select-none';
+                        updateStatusBadge('Release spacebar to start', 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30');
+                    }, state.readyThresholdMs);
+                }
+            } else if (state.timerState === 'RUNNING') {
+                stopTimer();
+            }
+        }
+
+        function handleKeyUp(e) {
+            if (e.code === 'Space') {
+                e.preventDefault();
+
+                if (state.timerState === 'HOLDING') {
+                    clearTimeout(state.holdTimeout);
+                    state.timerState = 'IDLE';
+                    timerDisplay.className = 'font-timer text-7xl sm:text-8xl md:text-9xl font-extrabold tracking-tight text-slate-100 select-none';
+                    updateStatusBadge('Press Space / Touch & Hold to Ready', 'bg-slate-900 border-slate-800 text-slate-400');
+                } else if (state.timerState === 'READY') {
+                    if (state.bldMode) {
+                        state.timerState = 'BLD_MEMO';
+                        state.bldPhase = 'MEMO';
+                        bldPhaseDisplay.textContent = 'Phase: MEMORIZATION';
+                        bldPhaseDisplay.classList.remove('hidden');
+                    }
+                    startTimer();
+                }
+            }
+        }
+
+        function setupTouchEvents() {
+            touchArea.addEventListener('touchstart', (e) => {
+                if (e.target.closest('button') || e.target.closest('select') || e.target.closest('label') || e.target.closest('#historyList')) return;
+                
+                if (state.timerState === 'RUNNING') {
+                    stopTimer();
+                    return;
+                }
+
+                if (state.timerState === 'IDLE') {
+                    state.timerState = 'HOLDING';
+                    timerDisplay.className = 'font-timer text-7xl sm:text-8xl md:text-9xl font-extrabold tracking-tight text-rose-500 select-none';
+                    updateStatusBadge('Hold screen...', 'bg-rose-500/20 text-rose-400 border-rose-500/30');
+
+                    state.holdTimeout = setTimeout(() => {
+                        state.timerState = 'READY';
+                        timerDisplay.className = 'font-timer text-7xl sm:text-8xl md:text-9xl font-extrabold tracking-tight text-emerald-400 select-none';
+                        updateStatusBadge('Release screen to start', 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30');
+                    }, state.readyThresholdMs);
+                }
+            });
+
+            touchArea.addEventListener('touchend', () => {
+                if (state.timerState === 'HOLDING') {
+                    clearTimeout(state.holdTimeout);
+                    state.timerState = 'IDLE';
+                    timerDisplay.className = 'font-timer text-7xl sm:text-8xl md:text-9xl font-extrabold tracking-tight text-slate-100 select-none';
+                    updateStatusBadge('Press Space / Touch & Hold to Ready', 'bg-slate-900 border-slate-800 text-slate-400');
+                } else if (state.timerState === 'READY') {
+                    startTimer();
+                }
+            });
+        }
+
+        function updateStatusBadge(text, classNames) {
+            timerStatus.innerHTML = `<span class="text-xs font-semibold tracking-wider uppercase px-3 py-1 rounded-full border transition-all duration-200 ${classNames}">${text}</span>`;
+        }
+
+        // --- Statistics Calculations ---
+        function getEffectiveTime(solve) {
+            if (!solve || solve.penalty === 'DNF') return Infinity;
+            return solve.rawTime + (solve.penalty === 2 ? 2000 : 0);
+        }
+
+        function calculateMean(solvesList, count) {
+            if (solvesList.length < count) return null;
+            const targetSolves = solvesList.slice(0, count);
+            let sum = 0;
+            for (let s of targetSolves) {
+                const time = getEffectiveTime(s);
+                if (time === Infinity) return 'DNF';
+                sum += time;
+            }
+            return sum / count;
+        }
+
+        function calculateAverage(solvesList, count) {
+            if (solvesList.length < count) return null;
+            const targetSolves = solvesList.slice(0, count);
+            const times = targetSolves.map(getEffectiveTime);
+            const dnfCount = times.filter(t => t === Infinity).length;
+            if (dnfCount > 1) return 'DNF';
+
+            times.sort((a, b) => a - b);
+            const trimmed = times.slice(1, count - 1);
+            const sum = trimmed.reduce((acc, t) => acc + t, 0);
+            return sum / trimmed.length;
+        }
+
+        function updateStats() {
+            const currentSolves = state.solves.filter(s => s.event === state.event);
+            statSolves.textContent = currentSolves.length;
+            historyCountBadge.textContent = currentSolves.length;
+
+            const validSolves = currentSolves.filter(s => s.penalty !== 'DNF');
+            if (validSolves.length > 0) {
+                const best = Math.min(...validSolves.map(s => getEffectiveTime(s)));
+                statBest.textContent = formatTime(best);
+            } else {
+                statBest.textContent = '--';
+            }
+
+            const mo3 = calculateMean(currentSolves, 3);
+            statMo3.textContent = mo3 ? (typeof mo3 === 'number' ? formatTime(mo3) : 'DNF') : '--';
+
+            const ao5 = calculateAverage(currentSolves, 5);
+            statAo5.textContent = ao5 ? (typeof ao5 === 'number' ? formatTime(ao5) : 'DNF') : '--';
+
+            let bestAo5 = Infinity;
+            for (let i = 0; i <= currentSolves.length - 5; i++) {
+                const sub = currentSolves.slice(i, i + 5);
+                const avg = calculateAverage(sub, 5);
+                if (typeof avg === 'number' && avg < bestAo5) bestAo5 = avg;
+            }
+            statBestAo5.textContent = bestAo5 !== Infinity ? formatTime(bestAo5) : '--';
+
+            const ao12 = calculateAverage(currentSolves, 12);
+            statAo12.textContent = ao12 ? (typeof ao12 === 'number' ? formatTime(ao12) : 'DNF') : '--';
+        }
+
+        // --- History List ---
+        function renderHistory() {
+            const currentSolves = state.solves.filter(s => s.event === state.event);
+            if (currentSolves.length === 0) {
+                historyList.innerHTML = `<div class="text-center text-slate-400 text-sm py-8 italic">No solves recorded yet.</div>`;
+                return;
+            }
+
+            historyList.innerHTML = currentSolves.map((solve, index) => {
+                const solveNum = currentSolves.length - index;
+                const formatted = formatTime(solve.rawTime, solve.penalty);
+                const isDnf = solve.penalty === 'DNF';
+                const isPlus2 = solve.penalty === 2;
+
+                return `
+                    <div class="bg-slate-950/40 hover:bg-slate-800/60 border border-slate-800/60 rounded-xl p-2.5 flex items-center justify-between text-xs transition group">
+                        <div class="flex items-center space-x-2.5">
+                            <span class="text-slate-400 font-mono w-6 text-right">${solveNum}.</span>
+                            <span class="font-timer font-bold text-sm ${isDnf ? 'text-rose-400' : isPlus2 ? 'text-amber-400' : 'text-slate-100'}">
+                                ${formatted}
+                            </span>
+                            ${solve.memoTime ? `<span class="text-[10px] text-slate-400 font-mono">(Memo: ${formatTime(solve.memoTime)})</span>` : ''}
+                        </div>
+                        <div class="flex items-center space-x-1 opacity-80 group-hover:opacity-100">
+                            <button onclick="togglePenalty(${solve.id}, 2)" class="px-1.5 py-0.5 rounded text-[10px] font-semibold ${isPlus2 ? 'bg-amber-500 text-slate-950' : 'bg-slate-800 text-slate-400 hover:text-amber-400'}">+2</button>
+                            <button onclick="togglePenalty(${solve.id}, 'DNF')" class="px-1.5 py-0.5 rounded text-[10px] font-semibold ${isDnf ? 'bg-rose-500 text-white' : 'bg-slate-800 text-slate-400 hover:text-rose-400'}">DNF</button>
+                            <button onclick="deleteSolve(${solve.id})" class="px-1.5 py-0.5 text-slate-400 hover:text-rose-400 transition ml-1" title="Delete">
+                                <i class="fa-solid fa-xmark"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        window.togglePenalty = function(solveId, penaltyType) {
+            const solve = state.solves.find(s => s.id === solveId);
+            if (!solve) return;
+            solve.penalty = solve.penalty === penaltyType ? 0 : penaltyType;
+            saveSolvesToStorage();
+            updateStats();
+            renderHistory();
+            updateLastSolveControlsUI();
+            syncUserPB();
+        };
+
+        window.deleteSolve = function(solveId) {
+            state.solves = state.solves.filter(s => s.id !== solveId);
+            saveSolvesToStorage();
+            updateStats();
+            renderHistory();
+            updateLastSolveControlsUI();
+            showToast('Solve deleted');
+            syncUserPB();
+        };
+
+        function showLastSolveControls() {
+            if (state.solves.length > 0) {
+                lastSolveControls.classList.remove('opacity-0', 'pointer-events-none');
+                updateLastSolveControlsUI();
+            }
+        }
+
+        function updateLastSolveControlsUI() {
+            const currentSolves = state.solves.filter(s => s.event === state.event);
+            if (currentSolves.length === 0) {
+                lastSolveControls.classList.add('opacity-0', 'pointer-events-none');
+                return;
+            }
+
+            const lastSolve = currentSolves[0];
+            btnPenaltyPlus2.className = `px-3 py-1 rounded-full text-xs font-semibold border transition ${lastSolve.penalty === 2 ? 'bg-amber-500 text-slate-950 border-amber-500' : 'border-amber-500/40 text-amber-400 hover:bg-amber-500/20'}`;
+            btnPenaltyDNF.className = `px-3 py-1 rounded-full text-xs font-semibold border transition ${lastSolve.penalty === 'DNF' ? 'bg-rose-500 text-white border-rose-500' : 'border-rose-500/40 text-rose-400 hover:bg-rose-500/20'}`;
+        }
+
+        function saveSolvesToStorage() {
+            localStorage.setItem('nexus_timer_solves', JSON.stringify(state.solves));
+        }
+
+        function loadSolvesFromStorage() {
+            const stored = localStorage.getItem('nexus_timer_solves');
+            if (stored) {
+                try { state.solves = JSON.parse(stored); } catch (e) {}
+            }
+        }
+
+        // --- Init Application ---
+        function init() {
+            loadSolvesFromStorage();
+            generateScramble(state.event);
+            updateStats();
+            renderHistory();
+            setupTouchEvents();
+
+            window.addEventListener('keydown', handleKeyDown);
+            window.addEventListener('keyup', handleKeyUp);
+
+            document.getElementById('nextScrambleBtn').addEventListener('click', () => generateScramble(state.event));
+            document.getElementById('copyScrambleBtn').addEventListener('click', () => {
+                navigator.clipboard.writeText(state.currentScramble);
+                showToast('Scramble copied to clipboard!');
+            });
+
+            eventSelect.addEventListener('change', (e) => {
+                state.event = e.target.value;
+                generateScramble(state.event);
+                updateStats();
+                renderHistory();
+                updateLastSolveControlsUI();
+            });
+
+            inspectionToggle.addEventListener('change', (e) => state.inspectionEnabled = e.target.checked);
+            bldToggle.addEventListener('change', (e) => state.bldMode = e.target.checked);
+
+            document.getElementById('clearSessionBtn').addEventListener('click', () => {
+                if (confirm('Are you sure you want to clear all solves in this session?')) {
+                    state.solves = state.solves.filter(s => s.event !== state.event);
+                    saveSolvesToStorage();
+                    updateStats();
+                    renderHistory();
+                    updateLastSolveControlsUI();
+                    showToast('Session cleared');
+                }
+            });
+
+            btnPenaltyPlus2.addEventListener('click', () => {
+                const currentSolves = state.solves.filter(s => s.event === state.event);
+                if (currentSolves.length > 0) togglePenalty(currentSolves[0].id, 2);
+            });
+
+            btnPenaltyDNF.addEventListener('click', () => {
+                const currentSolves = state.solves.filter(s => s.event === state.event);
+                if (currentSolves.length > 0) togglePenalty(currentSolves[0].id, 'DNF');
+            });
+
+            btnDeleteLast.addEventListener('click', () => {
+                const currentSolves = state.solves.filter(s => s.event === state.event);
+                if (currentSolves.length > 0) deleteSolve(currentSolves[0].id);
+            });
+        }
+
+        window.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>
